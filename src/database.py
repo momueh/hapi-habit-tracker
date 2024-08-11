@@ -17,14 +17,14 @@ def create_db():
     engine = create_engine(f"sqlite:///{DB_FILE}")
     Base.metadata.create_all(engine)
 
-def seed_default_habits():
+def seed_predefined_habits():
     session = get_db_session()
     default_habits = [
         Habit(name="Exercise", description="30 minutes of exercise", periodicity="daily"),
         Habit(name="Read", description="Read for 30 minutes", periodicity="daily"),
         Habit(name="Meditate", description="Meditate for 10 minutes", periodicity="daily"),
-        Habit(name="Clean house", description="Deep clean the house", periodicity="weekly"),
-        Habit(name="Call family", description="Call parents or siblings", periodicity="weekly"),
+        Habit(name="Clean kitchen", description="Deep clean the kitchen", periodicity="weekly"),
+        Habit(name="Walk dog", description="Walk the dog for 30 minutes", periodicity="weekly"),
     ]
     session.add_all(default_habits)
     session.commit()
