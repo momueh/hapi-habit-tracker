@@ -117,3 +117,12 @@ If you encounter any issues:
 ## Contributing
 
 This is a university project and is not open for contributions.
+
+
+## Packaging
+
+Use pip install -e
+
+then run:
+
+hapi

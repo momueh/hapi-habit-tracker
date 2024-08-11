@@ -11,7 +11,7 @@ class Habit(Base):
     id = Column(Integer, primary_key=True)
     name = Column(String, nullable=False)
     description = Column(String)
-    periodicity = Column(String, nullable=False)  # 'daily' or 'weekly'
+    periodicity = Column(String, nullable=False)  # 'daily' or 'weekly' TODO (no enums in sqlite), add monthly, quarterly
     created_at = Column(DateTime, default=datetime.utcnow)
     completions = relationship("Completion", back_populates="habit")
 
