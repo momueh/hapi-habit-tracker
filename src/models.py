@@ -17,9 +17,42 @@ class Habit(Base):
     current_streak = Column(Integer, default=0)
     max_streak = Column(Integer, default=0)
 
+    def complete(self, session: Session, completion_time=None):
+        completion_time = completion_time or datetime.utcnow()
+        
+        if self._is_within_period(completion_time):
+            self.current_streak += 1
+            self.max_streak = max(self.max_streak, self.current_streak)
+        else:
+            self.break_streak()
+        
+        new_completion = Completion(habit=self, completed_at=completion_time)
+        session.add(new_completion)
+        return new_completion
+
+    def break_streak(self):
+        self.current_streak = 0
+
+    def _is_within_period(self, completion_time):
+        last_completion = self.completions[0] if self.completions else None
+        if not last_completion:
+            return True
+        
+        if self.periodicity == 'daily':
+            return (completion_time - last_completion.completed_at) <= timedelta(days=1)
+        elif self.periodicity == 'weekly':
+            return (completion_time - last_completion.completed_at) <= timedelta(weeks=1)
+        else:
+            raise ValueError(f"Invalid periodicity: {self.periodicity}")
+
+    def check_streak(self, current_time=None):
+        current_time = current_time or datetime.utcnow()
+        if self.completions and not self._is_within_period(current_time):
+            self.break_streak()
+
     def __repr__(self):
         return f"<Habit(name='{self.name}', periodicity='{self.periodicity}', current_streak={self.current_streak}, max_streak={self.max_streak})>"
-        
+
 class Completion(Base):
     __tablename__ = 'completions'
 
