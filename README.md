@@ -126,3 +126,8 @@ Use pip install -e
 then run:
 
 hapi
+
+
+# run tests
+
+python3 -m pytest tests

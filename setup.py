@@ -12,7 +12,7 @@ setup(
     ],
     entry_points={
         "console_scripts": [
-            "hapi=src.main:app",
+            "hapi=main:app",
         ],
     },
 )
