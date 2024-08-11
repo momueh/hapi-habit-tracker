@@ -1,7 +1,6 @@
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
-from sqlalchemy.orm import relationship, Session
-from sqlalchemy.ext.declarative import declarative_base
-from datetime import datetime
+from sqlalchemy.orm import relationship, Session, declarative_base
+from datetime import datetime, timedelta, UTC
 
 Base = declarative_base()
 
@@ -12,7 +11,7 @@ class Habit(Base):
     name = Column(String, nullable=False)
     description = Column(String)
     periodicity = Column(String, nullable=False)  # 'daily' or 'weekly'
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(UTC))
     completions = relationship("Completion", back_populates="habit")
     current_streak = Column(Integer, default=0)
     max_streak = Column(Integer, default=0)

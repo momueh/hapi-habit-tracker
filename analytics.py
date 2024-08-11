@@ -14,18 +14,18 @@ def get_longest_run_streak(session: Session) -> int:
     return session.query(Habit).order_by(Habit.max_streak.desc()).first().max_streak
 
 def get_longest_run_streak_for_habit(session: Session, habit_id: int) -> int:
-    habit = session.query(Habit).get(habit_id)
+    habit = session.get(Habit, habit_id)
     return habit.max_streak if habit else 0
 
 def get_days_since_last_completion(session: Session, habit_id: int) -> int:
-    habit = session.query(Habit).get(habit_id)
+    habit = session.get(Habit, habit_id)
     if habit and habit.completions:
         last_completion = max(completion.completed_at for completion in habit.completions)
         return (datetime.now() - last_completion).days
     return None
 
 def get_completion_rate_for_habit(session: Session, habit_id: int, days: int) -> float:
-    habit = session.query(Habit).get(habit_id)
+    habit = session.get(Habit, habit_id)
     if not habit:
         return 0.0
     
