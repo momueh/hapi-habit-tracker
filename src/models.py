@@ -11,13 +11,15 @@ class Habit(Base):
     id = Column(Integer, primary_key=True)
     name = Column(String, nullable=False)
     description = Column(String)
-    periodicity = Column(String, nullable=False)  # 'daily' or 'weekly' TODO (no enums in sqlite), add monthly, quarterly
+    periodicity = Column(String, nullable=False)  # 'daily' or 'weekly'
     created_at = Column(DateTime, default=datetime.utcnow)
     completions = relationship("Completion", back_populates="habit")
+    current_streak = Column(Integer, default=0)
+    max_streak = Column(Integer, default=0)
 
     def __repr__(self):
-        return f"<Habit(name='{self.name}', periodicity='{self.periodicity}')>"
-
+        return f"<Habit(name='{self.name}', periodicity='{self.periodicity}', current_streak={self.current_streak}, max_streak={self.max_streak})>"
+        
 class Completion(Base):
     __tablename__ = 'completions'
 
