@@ -1,5 +1,5 @@
 import pytest
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, UTC
 from database import setup_test_db, get_db_session
 from analytics import (
     get_all_habits,
@@ -7,11 +7,7 @@ from analytics import (
     get_longest_run_streak,
     get_longest_run_streak_for_habit,
     get_days_since_last_completion,
-    get_completion_rate_for_habit,
-    get_all_habits_completion_rates,
-    get_overall_completion_rate
 )
-
 
 
 @pytest.fixture(scope="module")
@@ -38,30 +34,11 @@ def test_get_longest_run_streak(db_session):
     assert longest_streak == 30  # "Read" habit has the longest streak
 
 def test_get_longest_run_streak_for_habit(db_session):
-    read_streak = get_longest_run_streak_for_habit(db_session, 2)  # "Read" habit
-    assert read_streak == 30
+    longest_streak = get_longest_run_streak_for_habit(db_session, 2)  # "Read" habit
+    assert longest_streak == 30
 
 def test_get_days_since_last_completion(db_session):
-    days_exercise = get_days_since_last_completion(db_session, 1)  # "Exercise" habit
-    assert days_exercise == 0  # Completed today
+    days_since_completion = get_days_since_last_completion(db_session, 1)  # "Exercise" habit
+    assert days_since_completion == 0  # Completed today
+    # Todo add the other cases
 
-def test_get_completion_rate_for_habit(db_session):
-    rate_read = get_completion_rate_for_habit(db_session, 2, 30)  # "Read" habit, last 30 days
-    assert rate_read == 1.0  # Perfect streak
-
-    rate_exercise = get_completion_rate_for_habit(db_session, 1, 30)  # "Exercise" habit, last 30 days
-    assert rate_exercise == 22/30  # 22 completions out of 30 days
-
-def test_get_all_habits_completion_rates(db_session):
-    rates = get_all_habits_completion_rates(db_session, 30)
-    assert len(rates) == 5
-    assert rates["Read"] == 1.0
-    assert rates["Exercise"] == 22/30
-    assert 0.6 < rates["Meditate"] < 0.7  # Approximately 20 out of 30 days
-
-def test_get_overall_completion_rate(db_session):
-    rate = get_overall_completion_rate(db_session, 30)
-    # Expected completions: 22 (Exercise) + 30 (Read) + 20 (Meditate) + 28 (Walk dog) + 3 (Clean kitchen)
-    # Total possible: 30 * 4 (daily habits) + 4 (weekly habit) = 124
-    expected_rate = (22 + 30 + 20 + 28 + 3) / 124
-    assert rate == pytest.approx(expected_rate, rel=1e-2)

@@ -1,8 +1,8 @@
 import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from models import Base, Habit, Completion
-from datetime import datetime, timedelta
+from models import Base, Habit, DailyCompletion, WeeklyCompletion
+from datetime import datetime, timedelta, UTC
 import random
 from rich import print
 
@@ -30,43 +30,51 @@ def seed_predefined_habits(session):
         Habit(id=5, name="Walk dog", description="Walk the dog for 30 minutes", periodicity="daily", current_streak=25, max_streak=25),
     ]
     session.add_all(habits)
+    session.flush()  # Ensure all habits have IDs before creating completions
     
     # Create predefined completions
     today = datetime.now().date()
     completions = []
+
+    # Helper function to get the Monday of a given date's week
+    def get_week_start(date):
+        return date - timedelta(days=date.weekday())
     
-    # Exercise: Consistent with a break in the middle
+   # Exercise: Consistent with a break in the middle
     for i in range(30):
         if i not in range(10, 18):  # 8-day break from day 10 to 17
-            completions.append(Completion(habit_id=1, completed_at=today - timedelta(days=i)))
+            session.add(DailyCompletion(habit_id=1, completed_at=datetime.combine(today - timedelta(days=i), datetime.min.time()).replace(tzinfo=UTC)))
     
-    # Read: Perfect streak for the whole month
+   # Read: Perfect streak for the whole month
     for i in range(30):
-        completions.append(Completion(habit_id=2, completed_at=today - timedelta(days=i)))
-    
+        session.add(DailyCompletion(habit_id=2, completed_at=datetime.combine(today - timedelta(days=i), datetime.min.time()).replace(tzinfo=UTC)))
+
     # Meditate: Inconsistent with multiple breaks
     for i in range(30):
         if i % 3 != 0 and i % 7 != 0:  # Skip every 3rd and 7th day
-            completions.append(Completion(habit_id=3, completed_at=today - timedelta(days=i)))
-    
-    # Clean kitchen: Weekly habit, missed once
+            session.add(DailyCompletion(habit_id=3, completed_at=datetime.combine(today - timedelta(days=i), datetime.min.time()).replace(tzinfo=UTC)))
+
+    # Clean kitchen: Weekly habit, missed once, with multiple completions in some weeks
     for i in range(0, 30, 7):
+        week_start = get_week_start(today - timedelta(days=i))
         if i != 14:  # Missed on the 3rd week
-            completions.append(Completion(habit_id=4, completed_at=today - timedelta(days=i)))
-    
+            session.add(WeeklyCompletion(habit_id=4, week_start=week_start, completed_at=datetime.combine(week_start + timedelta(days=2), datetime.min.time()).replace(tzinfo=UTC)))
+            # Add a second completion in the first and fourth weeks
+            if i in [0, 28]:
+                session.add(WeeklyCompletion(habit_id=4, week_start=week_start, completed_at=datetime.combine(week_start + timedelta(days=5), datetime.min.time()).replace(tzinfo=UTC)))
+
     # Walk dog: Very consistent with just a couple misses
     for i in range(30):
         if i not in [7, 23]:  # Missed only on day 7 and 23
-            completions.append(Completion(habit_id=5, completed_at=today - timedelta(days=i)))
-    
-    session.add_all(completions)
-    
+            session.add(DailyCompletion(habit_id=5, completed_at=datetime.combine(today - timedelta(days=i), datetime.min.time()).replace(tzinfo=UTC)))
+
     session.commit()
     session.close()
 
 def clear_test_data(session):
     session.query(Habit).delete()
-    session.query(Completion).delete()
+    session.query(DailyCompletion).delete()
+    session.query(WeeklyCompletion).delete()
     session.commit()
 
 def setup_test_db():
