@@ -138,8 +138,6 @@ def delete_habit():
     habit_id = typer.prompt("Enter the ID of the habit you want to delete")
     habit = session.get(Habit, habit_id)
 
-    # Todo ask for confirmation
-
     if habit:
         session.delete(habit)
         session.commit()

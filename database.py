@@ -11,6 +11,15 @@ TEST_DB_FILE = "test_habits.db"
 
 
 def get_db_session(test=False):
+    """
+    Create and return a new database session.
+
+    Args:
+        test (bool): If True, uses test database file instead of production
+
+    Returns:
+        Session: SQLAlchemy database session
+    """
     db_file = TEST_DB_FILE if test else DB_FILE
     engine = create_engine(f"sqlite:///{db_file}")
     Session = sessionmaker(bind=engine)
@@ -18,13 +27,25 @@ def get_db_session(test=False):
 
 
 def create_db(test=False):
+    """
+    Create database tables based on SQLAlchemy models.
+
+    Args:
+        test (bool): If True, creates test database instead of production
+    """
     db_file = TEST_DB_FILE if test else DB_FILE
     engine = create_engine(f"sqlite:///{db_file}")
     Base.metadata.create_all(engine)
 
 
 def seed_predefined_habits(session):
-    # Create predefined habits
+    """
+    Populate database with predefined habits and their completion history.
+    Creates a 30-day history of completions with various patterns for each habit.
+
+    Args:
+        session (Session): SQLAlchemy database session
+    """
     created_at_date = datetime.now() - timedelta(days=30)
     habits = [
         Habit(
@@ -80,8 +101,16 @@ def seed_predefined_habits(session):
     today = datetime.now().date()
     completions = []
 
-    # Helper function to get the Monday of a given date's week
     def get_week_start(date):
+        """
+        Calculate the Monday date for the week containing the given date.
+
+        Args:
+            date (date): Any date within the desired week
+
+        Returns:
+            date: The Monday of that week
+        """
         return date - timedelta(days=date.weekday())
 
     # Exercise: Consistent with a break in the middle
@@ -161,6 +190,12 @@ def seed_predefined_habits(session):
 
 
 def clear_test_data(session):
+    """
+    Remove all data from Habit, DailyCompletion, and WeeklyCompletion tables.
+
+    Args:
+        session (Session): SQLAlchemy database session
+    """
     session.query(Habit).delete()
     session.query(DailyCompletion).delete()
     session.query(WeeklyCompletion).delete()
@@ -168,6 +203,10 @@ def clear_test_data(session):
 
 
 def setup_test_db():
+    """
+    Initialize test database by creating tables and seeding with test data.
+    Creates a new database file if it doesn't exist.
+    """
     if not os.path.exists(TEST_DB_FILE):
         create_db(test=True)
     session = get_db_session(test=True)
@@ -177,6 +216,10 @@ def setup_test_db():
 
 
 def ensure_prod_db_exists():
+    """
+    Ensure production database exists and is seeded with initial data.
+    Creates a new database file with default habits if it doesn't exist.
+    """
     if not os.path.exists(DB_FILE):
         create_db()
         session = get_db_session()

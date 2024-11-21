@@ -5,6 +5,20 @@ from datetime import datetime, timedelta, UTC
 Base = declarative_base()
 
 class Habit(Base):
+    """
+    Represents a trackable habit with daily or weekly periodicity.
+
+    Attributes:
+        id (int): Primary key
+        name (str): Name of the habit
+        description (str): Optional description of the habit
+        periodicity (str): Frequency of the habit ('daily' or 'weekly')
+        created_at (datetime): When the habit was created
+        current_streak (int): Number of consecutive successful completions
+        max_streak (int): Highest streak achieved
+        daily_completions (list): Related DailyCompletion records
+        weekly_completions (list): Related WeeklyCompletion records
+    """
     __tablename__ = 'habits'
 
     id = Column(Integer, primary_key=True)
@@ -18,6 +32,16 @@ class Habit(Base):
     weekly_completions = relationship("WeeklyCompletion", back_populates="habit")
 
     def complete(self, session: Session, completion_time=None):
+        """
+        Record a completion of the habit.
+
+        Args:
+            session (Session): SQLAlchemy database session
+            completion_time (datetime, optional): Time of completion. Defaults to current UTC time
+
+        Raises:
+            ValueError: If habit has invalid periodicity
+        """
         completion_time = completion_time or datetime.now(UTC)
         
         if self.periodicity == 'daily':
@@ -43,6 +67,12 @@ class Habit(Base):
             raise ValueError(f"Invalid periodicity: {self.periodicity}")
 
     def _update_streak(self, completion_time):
+        """
+        Update the current and maximum streak based on completion time.
+
+        Args:
+            completion_time (datetime): Time of the completion
+        """
         if self._is_within_period(completion_time):
             self.current_streak += 1
             self.max_streak = max(self.max_streak, self.current_streak)
@@ -50,9 +80,22 @@ class Habit(Base):
             self.break_streak()
 
     def break_streak(self):
+        """Reset the current streak to zero."""
         self.current_streak = 0
 
     def _is_within_period(self, completion_time):
+        """
+        Check if completion time is within allowed period to maintain streak.
+
+        Args:
+            completion_time (datetime): Time of the completion
+
+        Returns:
+            bool: True if completion maintains streak, False otherwise
+
+        Raises:
+            ValueError: If habit has invalid periodicity
+        """
         if self.periodicity == 'daily':
             last_completion = self.daily_completions[-1] if self.daily_completions else None
             if not last_completion:
@@ -70,9 +113,27 @@ class Habit(Base):
 
     @staticmethod
     def _get_week_start(date):
+        """
+        Calculate the Monday date for the week containing the given date.
+
+        Args:
+            date (datetime): Any date within the desired week
+
+        Returns:
+            date: The Monday of that week
+        """
         return date.date() - timedelta(days=date.weekday())
 
 class DailyCompletion(Base):
+    """
+    Records a single completion of a daily habit.
+
+    Attributes:
+        id (int): Primary key
+        habit_id (int): Foreign key to associated habit
+        completed_at (datetime): When the habit was completed
+        habit (Habit): Related habit object
+    """
     __tablename__ = 'daily_completions'
 
     id = Column(Integer, primary_key=True)
@@ -81,6 +142,16 @@ class DailyCompletion(Base):
     habit = relationship("Habit", back_populates="daily_completions")
 
 class WeeklyCompletion(Base):
+    """
+    Records a single completion of a weekly habit.
+
+    Attributes:
+        id (int): Primary key
+        habit_id (int): Foreign key to associated habit
+        week_start (date): Monday date of the completion week
+        completed_at (datetime): When the habit was completed
+        habit (Habit): Related habit object
+    """
     __tablename__ = 'weekly_completions'
 
     id = Column(Integer, primary_key=True)
