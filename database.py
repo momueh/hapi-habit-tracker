@@ -228,6 +228,6 @@ def ensure_prod_db_exists():
         session = get_db_session()
         seed_predefined_habits(session)
         session.close()
-        print(f"[green]Created database and seeded with default habits.[/green]")
+        print(f"[green]Created database and added default habits.[/green]")
     else:
-        print(f"[green]Using existing database.[/green]")
+        print(f"[green]Habit data loaded.[/green]")
