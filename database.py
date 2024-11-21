@@ -46,7 +46,8 @@ def seed_predefined_habits(session):
     Args:
         session (Session): SQLAlchemy database session
     """
-    created_at_date = datetime.now() - timedelta(days=30)
+    created_at_date = datetime.now(UTC) - timedelta(days=30)
+
     habits = [
         Habit(
             id=1,
@@ -98,7 +99,7 @@ def seed_predefined_habits(session):
     session.flush()  # Ensure all habits have IDs before creating completions
 
     # Create predefined completions
-    today = datetime.now().date()
+    today = datetime.now(UTC).date()
     completions = []
 
     def get_week_start(date):
@@ -120,8 +121,10 @@ def seed_predefined_habits(session):
                 DailyCompletion(
                     habit_id=1,
                     completed_at=datetime.combine(
-                        today - timedelta(days=i), datetime.min.time()
-                    ).replace(tzinfo=UTC),
+                        today - timedelta(days=i),
+                        datetime.min.time(),
+                        tzinfo=UTC
+                    ),
                 )
             )
 
@@ -131,8 +134,10 @@ def seed_predefined_habits(session):
             DailyCompletion(
                 habit_id=2,
                 completed_at=datetime.combine(
-                    today - timedelta(days=i), datetime.min.time()
-                ).replace(tzinfo=UTC),
+                    today - timedelta(days=i),
+                    datetime.min.time(),
+                    tzinfo=UTC
+                ),
             )
         )
 
@@ -143,8 +148,10 @@ def seed_predefined_habits(session):
                 DailyCompletion(
                     habit_id=3,
                     completed_at=datetime.combine(
-                        today - timedelta(days=i), datetime.min.time()
-                    ).replace(tzinfo=UTC),
+                        today - timedelta(days=i),
+                        datetime.min.time(),
+                        tzinfo=UTC
+                    ),
                 )
             )
 
@@ -157,8 +164,10 @@ def seed_predefined_habits(session):
                     habit_id=4,
                     week_start=week_start,
                     completed_at=datetime.combine(
-                        week_start + timedelta(days=2), datetime.min.time()
-                    ).replace(tzinfo=UTC),
+                        week_start + timedelta(days=2),
+                        datetime.min.time(),
+                        tzinfo=UTC
+                    ),
                 )
             )
             # Add a second completion in the first and fourth weeks
@@ -168,8 +177,10 @@ def seed_predefined_habits(session):
                         habit_id=4,
                         week_start=week_start,
                         completed_at=datetime.combine(
-                            week_start + timedelta(days=5), datetime.min.time()
-                        ).replace(tzinfo=UTC),
+                            week_start + timedelta(days=5),
+                            datetime.min.time(),
+                            tzinfo=UTC
+                        ),
                     )
                 )
 
@@ -180,8 +191,10 @@ def seed_predefined_habits(session):
                 DailyCompletion(
                     habit_id=5,
                     completed_at=datetime.combine(
-                        today - timedelta(days=i), datetime.min.time()
-                    ).replace(tzinfo=UTC),
+                        today - timedelta(days=i),
+                        datetime.min.time(),
+                        tzinfo=UTC
+                    ),
                 )
             )
 

@@ -10,7 +10,7 @@ from analytics import (
 )
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="function")
 def db_session():
     setup_test_db()
     session = get_db_session(test=True)
@@ -40,5 +40,4 @@ def test_get_longest_run_streak_for_habit(db_session):
 def test_get_days_since_last_completion(db_session):
     days_since_completion = get_days_since_last_completion(db_session, 1)  # "Exercise" habit
     assert days_since_completion == 0  # Completed today
-    # Todo add the other cases
 

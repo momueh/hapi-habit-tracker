@@ -1,5 +1,5 @@
 from sqlalchemy import Column, Integer, String, DateTime, Date, ForeignKey
-from sqlalchemy.orm import relationship, Session, declarative_base
+from sqlalchemy.orm import relationship, Session, declarative_base, validates
 from datetime import datetime, timedelta, UTC
 
 Base = declarative_base()
@@ -31,6 +31,15 @@ class Habit(Base):
     daily_completions = relationship("DailyCompletion", back_populates="habit")
     weekly_completions = relationship("WeeklyCompletion", back_populates="habit")
 
+    VALID_PERIODICITIES = ['daily', 'weekly']
+
+    @validates('periodicity')
+    def validate_periodicity(self, key, periodicity):
+        """Validate that periodicity is either 'daily' or 'weekly'"""
+        if periodicity not in self.VALID_PERIODICITIES:
+            raise ValueError(f"Periodicity must be one of: {', '.join(self.VALID_PERIODICITIES)}")
+        return periodicity
+
     def complete(self, session: Session, completion_time=None):
         """
         Record a completion of the habit.
@@ -42,7 +51,11 @@ class Habit(Base):
         Raises:
             ValueError: If habit has invalid periodicity
         """
-        completion_time = completion_time or datetime.now(UTC)
+        # Ensure completion_time is UTC-aware
+        if completion_time is None:
+            completion_time = datetime.now(UTC)
+        elif completion_time.tzinfo is None:
+            raise ValueError("completion_time must be timezone-aware")
         
         if self.periodicity == 'daily':
             new_completion = DailyCompletion(habit=self, completed_at=completion_time)
@@ -63,8 +76,6 @@ class Habit(Base):
                 new_completion = WeeklyCompletion(habit=self, week_start=week_start, completed_at=completion_time)
                 session.add(new_completion)
                 self._update_streak(completion_time)
-        else:
-            raise ValueError(f"Invalid periodicity: {self.periodicity}")
 
     def _update_streak(self, completion_time):
         """
@@ -100,13 +111,17 @@ class Habit(Base):
             last_completion = self.daily_completions[-1] if self.daily_completions else None
             if not last_completion:
                 return True
-            return (completion_time.date() - last_completion.completed_at.date()) <= timedelta(days=1)
+            # Ensure both dates are UTC-aware before comparison
+            last_completion_date = last_completion.completed_at.replace(tzinfo=UTC).date()
+            completion_date = completion_time.replace(tzinfo=UTC).date()
+            return (completion_date - last_completion_date) <= timedelta(days=1)
         elif self.periodicity == 'weekly':
             last_completion = self.weekly_completions[-1] if self.weekly_completions else None
             if not last_completion:
                 return True
-            current_week_start = self._get_week_start(completion_time)
-            last_week_start = self._get_week_start(last_completion.completed_at)
+            # Ensure both dates are UTC-aware before comparison
+            current_week_start = self._get_week_start(completion_time.replace(tzinfo=UTC))
+            last_week_start = self._get_week_start(last_completion.completed_at.replace(tzinfo=UTC))
             return (current_week_start - last_week_start) <= timedelta(weeks=1)
         else:
             raise ValueError(f"Invalid periodicity: {self.periodicity}")
@@ -138,7 +153,7 @@ class DailyCompletion(Base):
 
     id = Column(Integer, primary_key=True)
     habit_id = Column(Integer, ForeignKey('habits.id'))
-    completed_at = Column(DateTime, default=lambda: datetime.now(UTC))
+    completed_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
     habit = relationship("Habit", back_populates="daily_completions")
 
 class WeeklyCompletion(Base):
@@ -157,5 +172,5 @@ class WeeklyCompletion(Base):
     id = Column(Integer, primary_key=True)
     habit_id = Column(Integer, ForeignKey('habits.id'))
     week_start = Column(Date, nullable=False)
-    completed_at = Column(DateTime, default=lambda: datetime.now(UTC))
+    completed_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
     habit = relationship("Habit", back_populates="weekly_completions")
