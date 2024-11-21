@@ -65,13 +65,21 @@ def display_habits():
     table.add_column("Name", style="magenta")
     table.add_column("Start Date", style="blue")
     table.add_column("Periodicity", style="green")
-    table.add_column("Current Streak", style="yellow")
-    table.add_column("Record Streak", style="red")
+    table.add_column("Current Streak", style="red")
+    table.add_column("Record Streak", style="yellow")
+    table.add_column("Last Completion", style="blue")
+    
 
     for habit in habits:
         streak_icon = "🔥" if habit.current_streak > 0 else ""
         trophy_icon = "🏆" if habit.max_streak > 0 else ""
         formatted_start_date = habit.created_at.strftime("%m-%d-%Y")
+
+        # Format last completion time
+        last_completion = habit.get_last_completion()
+        formatted_last_completion = (last_completion.strftime("%m-%d-%Y %H:%M") 
+                             if last_completion 
+                             else "Never")
         table.add_row(
             str(habit.id),
             habit.name,
@@ -79,6 +87,7 @@ def display_habits():
             habit.periodicity,
             f"{streak_icon} {habit.current_streak}",
             f"{trophy_icon} {habit.max_streak}",
+            formatted_last_completion,
         )
 
     console.print(table)

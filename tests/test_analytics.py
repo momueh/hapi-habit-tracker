@@ -1,6 +1,6 @@
 import pytest
 from datetime import datetime, timedelta, UTC
-from database import setup_test_db, get_db_session
+from models import Habit, DailyCompletion, WeeklyCompletion
 from analytics import (
     get_all_habits,
     get_habits_by_periodicity,
@@ -9,35 +9,140 @@ from analytics import (
     get_days_since_last_completion,
 )
 
-
-@pytest.fixture(scope="function")
-def db_session():
-    setup_test_db()
-    session = get_db_session(test=True)
-    yield session
-    session.close()
-
 def test_get_all_habits(db_session):
-    habits = get_all_habits(db_session)
-    assert len(habits) == 5
-    assert all(habit.name in ["Exercise", "Read", "Meditate", "Clean kitchen", "Walk dog"] for habit in habits)
+    # Create test habits with known data
+    habits = [
+        Habit(name="Habit 1", periodicity="daily"),
+        Habit(name="Habit 2", periodicity="weekly"),
+        Habit(name="Habit 3", periodicity="daily")
+    ]
+    for habit in habits:
+        db_session.add(habit)
+    db_session.commit()
+
+    retrieved_habits = get_all_habits(db_session)
+    assert len(retrieved_habits) == 3
+    assert {h.name for h in retrieved_habits} == {"Habit 1", "Habit 2", "Habit 3"}
 
 def test_get_habits_by_periodicity(db_session):
+    # Create mixed periodicity habits
+    habits = [
+        Habit(name="Daily 1", periodicity="daily"),
+        Habit(name="Weekly 1", periodicity="weekly"),
+        Habit(name="Daily 2", periodicity="daily"),
+        Habit(name="Weekly 2", periodicity="weekly")
+    ]
+    for habit in habits:
+        db_session.add(habit)
+    db_session.commit()
+
+    # Test filtering
     daily_habits = get_habits_by_periodicity(db_session, "daily")
     weekly_habits = get_habits_by_periodicity(db_session, "weekly")
-    assert len(daily_habits) == 4
-    assert len(weekly_habits) == 1
-    assert weekly_habits[0].name == "Clean kitchen"
+    
+    assert len(daily_habits) == 2
+    assert len(weekly_habits) == 2
+    assert all(h.periodicity == "daily" for h in daily_habits)
+    assert all(h.periodicity == "weekly" for h in weekly_habits)
 
 def test_get_longest_run_streak(db_session):
+    # Create habits with different streak patterns
+    base_time = datetime.now(UTC)
+    
+    # Habit with 5-day streak
+    habit1 = Habit(name="Habit 1", periodicity="daily")
+    db_session.add(habit1)
+    for i in range(5):
+        completion = DailyCompletion(
+            habit=habit1,
+            completed_at=base_time - timedelta(days=i)
+        )
+        db_session.add(completion)
+
+    # Habit with 3-day streak
+    habit2 = Habit(name="Habit 2", periodicity="daily")
+    db_session.add(habit2)
+    for i in range(3):
+        completion = DailyCompletion(
+            habit=habit2,
+            completed_at=base_time - timedelta(days=i)
+        )
+        db_session.add(completion)
+
+    db_session.commit()
+
+    # Update max streaks for both habits
+    habit1.max_streak = habit1.calculate_max_streak()
+    habit2.max_streak = habit2.calculate_max_streak()
+    db_session.commit()
+
+    # Verify longest streak
     longest_streak = get_longest_run_streak(db_session)
-    assert longest_streak == 30  # "Read" habit has the longest streak
+    assert longest_streak == 5
 
 def test_get_longest_run_streak_for_habit(db_session):
-    longest_streak = get_longest_run_streak_for_habit(db_session, 2)  # "Read" habit
-    assert longest_streak == 30
+    # Create a habit with a known streak pattern
+    habit = Habit(name="Test Habit", periodicity="daily")
+    db_session.add(habit)
+    
+    base_time = datetime.now(UTC)
+    
+    # Create a 3-day streak, gap, then 5-day streak
+    # First streak (3 days)
+    for i in range(10, 13):
+        completion = DailyCompletion(
+            habit=habit,
+            completed_at=base_time - timedelta(days=i)
+        )
+        db_session.add(completion)
+    
+    # Second streak (5 days)
+    for i in range(0, 5):
+        completion = DailyCompletion(
+            habit=habit,
+            completed_at=base_time - timedelta(days=i)
+        )
+        db_session.add(completion)
+    
+    db_session.commit()
+
+    # Update max streak
+    habit.max_streak = habit.calculate_max_streak()
+    db_session.commit()
+
+    # Verify max streak
+    longest_streak = get_longest_run_streak_for_habit(db_session, habit.id)
+    assert longest_streak == 5
 
 def test_get_days_since_last_completion(db_session):
-    days_since_completion = get_days_since_last_completion(db_session, 1)  # "Exercise" habit
-    assert days_since_completion == 0  # Completed today
+    # Create a habit with known last completion
+    habit = Habit(name="Test Habit", periodicity="daily")
+    db_session.add(habit)
+    
+    # Add completion 3 days ago
+    completion_time = datetime.now(UTC) - timedelta(days=3)
+    completion = DailyCompletion(
+        habit=habit,
+        completed_at=completion_time
+    )
+    db_session.add(completion)
+    db_session.commit()
 
+    # Test days since completion
+    days_since = get_days_since_last_completion(db_session, habit.id)
+    assert days_since == 3
+
+def test_get_days_since_last_completion_never_completed(db_session):
+    # Create a habit with no completions
+    habit = Habit(name="Test Habit", periodicity="daily")
+    db_session.add(habit)
+    db_session.commit()
+
+    # Test days since completion for never-completed habit
+    days_since = get_days_since_last_completion(db_session, habit.id)
+    assert days_since is None
+
+def test_get_days_since_last_completion_nonexistent_habit(db_session):
+    # Test with non-existent habit ID
+    days_since = get_days_since_last_completion(db_session, 999)
+    assert days_since is None

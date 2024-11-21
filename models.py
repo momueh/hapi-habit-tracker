@@ -28,8 +28,18 @@ class Habit(Base):
     created_at = Column(DateTime, default=lambda: datetime.now(UTC))
     current_streak = Column(Integer, default=0)
     max_streak = Column(Integer, default=0)
-    daily_completions = relationship("DailyCompletion", back_populates="habit")
-    weekly_completions = relationship("WeeklyCompletion", back_populates="habit")
+    daily_completions = relationship(
+        "DailyCompletion",
+        back_populates="habit",
+        order_by="DailyCompletion.completed_at",  # Oldest first
+        lazy="select"
+    )
+    weekly_completions = relationship(
+        "WeeklyCompletion",
+        back_populates="habit",
+        order_by="WeeklyCompletion.completed_at",  # Oldest first
+        lazy="select"
+    )
 
     VALID_PERIODICITIES = ['daily', 'weekly']
 
@@ -60,7 +70,6 @@ class Habit(Base):
         if self.periodicity == 'daily':
             new_completion = DailyCompletion(habit=self, completed_at=completion_time)
             session.add(new_completion)
-            self._update_streak(completion_time)
         elif self.periodicity == 'weekly':
             week_start = self._get_week_start(completion_time)
             existing_completion = session.query(WeeklyCompletion).filter(
@@ -75,7 +84,10 @@ class Habit(Base):
             else:
                 new_completion = WeeklyCompletion(habit=self, week_start=week_start, completed_at=completion_time)
                 session.add(new_completion)
-                self._update_streak(completion_time)
+
+        # Recalculate streaks after recording completion
+        self.current_streak = self.calculate_streak(completion_time)
+        self.max_streak = self.calculate_max_streak()
 
     def _update_streak(self, completion_time):
         """
@@ -88,7 +100,7 @@ class Habit(Base):
             self.current_streak += 1
             self.max_streak = max(self.max_streak, self.current_streak)
         else:
-            self.break_streak()
+            self.current_streak = 1
 
     def break_streak(self):
         """Reset the current streak to zero."""
@@ -125,6 +137,115 @@ class Habit(Base):
             return (current_week_start - last_week_start) <= timedelta(weeks=1)
         else:
             raise ValueError(f"Invalid periodicity: {self.periodicity}")
+
+    
+    def calculate_streak(self, at_time=None):
+        """
+        Calculate the current streak based on completion history.
+        
+        Args:
+            at_time (datetime, optional): Calculate streak as of this time
+                                        Defaults to current UTC time
+        Returns:
+            int: Current streak count
+        """
+        if at_time is None:
+            at_time = datetime.now(UTC)
+        elif at_time.tzinfo is None:
+            raise ValueError("at_time must be timezone-aware")
+
+        completions = (self.daily_completions if self.periodicity == 'daily' 
+                      else self.weekly_completions)
+        
+        if not completions:
+            return 0
+
+        streak = 1
+        if self.periodicity == 'daily':
+            # Get all completion dates and sort them
+            completion_dates = sorted([c.completed_at.date() for c in completions], reverse=True)
+            
+            current_date = completion_dates[0]
+            
+            for next_date in completion_dates[1:]:
+                if (current_date - next_date) == timedelta(days=1):
+                    streak += 1
+                    current_date = next_date
+                else:
+                    break
+                    
+        else:  # weekly
+            # Get all completion weeks and sort them
+            completion_weeks = sorted([self._get_week_start(c.completed_at) for c in completions], reverse=True)
+            
+            current_week = completion_weeks[0]
+            
+            for next_week in completion_weeks[1:]:
+                if (current_week - next_week) == timedelta(weeks=1):
+                    streak += 1
+                    current_week = next_week
+                else:
+                    break
+
+        return streak 
+
+    def calculate_max_streak(self):
+        """
+        Calculate the maximum streak achieved based on completion history.
+        
+        Returns:
+            int: Maximum streak achieved
+        """
+        completions = (self.daily_completions if self.periodicity == 'daily' 
+                      else self.weekly_completions)
+        
+        if not completions:
+            return 0
+
+        max_streak = current_streak = 1
+        
+        if self.periodicity == 'daily':
+            completion_dates = sorted([c.completed_at.date() for c in completions])
+            current_date = completion_dates[0]
+            
+            for next_date in completion_dates[1:]:
+                if (next_date - current_date) == timedelta(days=1):
+                    current_streak += 1
+                    max_streak = max(max_streak, current_streak)
+                else:
+                    current_streak = 1
+                current_date = next_date
+        else:  # weekly
+            completion_weeks = sorted([self._get_week_start(c.completed_at) for c in completions])
+            current_week = completion_weeks[0]
+            
+            for next_week in completion_weeks[1:]:
+                if (next_week - current_week) == timedelta(weeks=1):
+                    current_streak += 1
+                    max_streak = max(max_streak, current_streak)
+                else:
+                    current_streak = 1
+                current_week = next_week
+
+        return max_streak
+    
+    def get_last_completion(self):
+        """
+        Get the most recent completion time for the habit.
+
+        Returns:
+            datetime: The last completion time, or None if never completed
+        """
+        if self.periodicity == 'daily':
+            last_completion = (self.daily_completions[-1]
+                         if self.daily_completions 
+                         else None)
+        else:  # weekly
+            last_completion = (self.weekly_completions[-1]
+                         if self.weekly_completions 
+                         else None)
+    
+        return last_completion.completed_at if last_completion else None
 
     @staticmethod
     def _get_week_start(date):

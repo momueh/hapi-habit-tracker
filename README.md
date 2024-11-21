@@ -127,7 +127,6 @@ The test suite uses a separate test database (`test_habits.db`) that's completel
 When you run the tests:
 
 1. If the test database doesn't exist, it's created
-2. Before each test module runs:
+2. Before each testcase runs:
     - All existing test data is cleared
-    - Fresh predefined test data is seeded
 3. Tests are executed against this clean test database state
