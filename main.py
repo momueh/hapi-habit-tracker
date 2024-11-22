@@ -18,7 +18,8 @@ def main(ctx: typer.Context):
     """
     Hapi: Manage and analyze your habits
     """
-    print("[bold green]Welcome to Hapi![/bold green]")
+    print("\n")
+    print("[bold green]Welcome to HAPI - Your Personal Habit Tracker![/bold green]")
     ensure_prod_db_exists()
 
     if ctx.invoked_subcommand is None:
