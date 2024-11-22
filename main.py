@@ -207,6 +207,7 @@ def display_habits_list(habits):
     for habit in habits:
         table.add_row(str(habit.id), habit.name, habit.periodicity)
 
+    console.print("\n")
     console.print(table)
 
 
