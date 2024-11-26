@@ -16,7 +16,13 @@ A simple CLI habit tracking application.
     cd habit-tracker
     ```
 
-2. Run the setup script:
+2. Make the setup script executable (macOS and Linux only):
+
+    ```bash
+    chmod +x setup.sh
+    ```
+
+3. Run the setup script:
 
     On macOS and Linux:
 

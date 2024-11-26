@@ -10,4 +10,3 @@ fi
 $PYTHON_CMD -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
-$PYTHON_CMD main.py

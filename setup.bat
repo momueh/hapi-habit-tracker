@@ -11,4 +11,3 @@ if %ERRORLEVEL% EQU 0 (
 %PYTHON_CMD% -m venv venv
 call venv\Scripts\activate
 pip install -r requirements.txt
-%PYTHON_CMD% main.py
