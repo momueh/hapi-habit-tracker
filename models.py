@@ -160,6 +160,15 @@ class Habit(Base):
         if not completions:
             return 0
 
+        # Check if the last completion is recent enough to count
+        last_completion_date = completions[-1].completed_at.date()
+        days_since_last = (at_time.date() - last_completion_date).days
+    
+        # If too much time has passed, streak is broken
+        if (self.periodicity == 'daily' and days_since_last > 1) or \
+        (self.periodicity == 'weekly' and days_since_last > 7):
+            return 0
+
         streak = 1
         if self.periodicity == 'daily':
             # Get all completion dates and sort them
