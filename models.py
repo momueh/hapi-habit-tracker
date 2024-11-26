@@ -32,13 +32,15 @@ class Habit(Base):
         "DailyCompletion",
         back_populates="habit",
         order_by="DailyCompletion.completed_at",  # Oldest first
-        lazy="select"
+        lazy="select",
+        cascade="all, delete-orphan"
     )
     weekly_completions = relationship(
         "WeeklyCompletion",
         back_populates="habit",
         order_by="WeeklyCompletion.completed_at",  # Oldest first
-        lazy="select"
+        lazy="select",
+        cascade="all, delete-orphan"
     )
 
     VALID_PERIODICITIES = ['daily', 'weekly']
