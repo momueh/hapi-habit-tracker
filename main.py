@@ -8,6 +8,7 @@ from models import Base, Habit
 import os
 from database import get_db_session, ensure_prod_db_exists
 import analytics
+from datetime import datetime, UTC
 
 app = typer.Typer(name="hapi")
 console = Console()
@@ -60,6 +61,12 @@ def show_main_menu():
 def display_habits():
     session = get_db_session()
     habits = session.query(Habit).all()
+
+    # Recalculate current streaks before display
+    current_time = datetime.now(UTC)
+    for habit in habits:
+        habit.current_streak = habit.calculate_streak(current_time)
+        session.commit()
 
     table = Table(title="Your Habits")
     table.add_column("ID", style="cyan")
