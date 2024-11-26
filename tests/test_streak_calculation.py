@@ -114,3 +114,5 @@ def test_weekly_streak_with_gaps(db_session):
     
     assert habit.calculate_streak() == 2  # Current streak is 2 weeks
     assert habit.calculate_max_streak() == 3  # Longest streak was 3 weeks
+
+

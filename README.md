@@ -102,13 +102,11 @@ To exit the application, select option 6.
 
 -   `analytics.py`: Contains functions for analyzing habit data, including streak calculations, habit filtering, and completion statistics.
 
--   `setup.sh`/`setup.bat`: Setup scripts for Unix-based systems and Windows respectively. They create a virtual environment, install dependencies, and launch the application.
+-   `setup.sh`/`setup.bat`: Setup scripts for Unix-based systems and Windows respectively. They create a virtual environment and install dependencies.
 
 -   `requirements.txt`: Lists all Python package dependencies required by the application.
 
--   `tests/`: Directory containing test files
-
-    -   `test_analytics.py`: Unit tests for the analytics functionality
+-   `tests/`: Directory containing multiple test files
 
 -   `habits.db`: SQLite database file (created on first run) that stores all habit and completion data.
 

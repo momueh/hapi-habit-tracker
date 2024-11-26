@@ -3,6 +3,7 @@ from datetime import datetime, UTC
 from models import Habit, WeeklyCompletion
 
 def test_create_weekly_completion(db_session):
+    """Verifies creation of a weekly completion record."""
     habit = Habit(name="Test Habit", periodicity="weekly")
     db_session.add(habit)
     db_session.flush()
@@ -21,6 +22,7 @@ def test_create_weekly_completion(db_session):
     assert completion.week_start == habit._get_week_start(completion_time)
 
 def test_delete_weekly_completion(db_session):
+    """Tests deletion of a single weekly completion record."""
     habit = Habit(name="Test Habit", periodicity="weekly")
     db_session.add(habit)
     db_session.flush()
@@ -40,6 +42,7 @@ def test_delete_weekly_completion(db_session):
     assert len(habit.weekly_completions) == 0
 
 def test_cascade_delete_weekly_completions(db_session):
+    """Ensures weekly completion records are automatically deleted when parent habit is removed."""
     habit = Habit(name="Test Habit", periodicity="weekly")
     db_session.add(habit)
     db_session.flush()

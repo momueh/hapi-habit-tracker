@@ -3,6 +3,7 @@ from datetime import datetime, UTC
 from models import Habit, DailyCompletion
 
 def test_create_daily_completion(db_session):
+    """Verifies creation of a daily completion record and its association with a habit."""
     habit = Habit(name="Test Habit", periodicity="daily")
     db_session.add(habit)
     db_session.flush()
@@ -18,6 +19,7 @@ def test_create_daily_completion(db_session):
     assert completion.habit_id == habit.id
 
 def test_delete_daily_completion(db_session):
+    """Tests deletion of a single completion record."""
     habit = Habit(name="Test Habit", periodicity="daily")
     db_session.add(habit)
     db_session.flush()
@@ -35,6 +37,7 @@ def test_delete_daily_completion(db_session):
     assert len(habit.daily_completions) == 0
 
 def test_cascade_delete_completions(db_session):
+    """Ensures completion records are automatically deleted when related habit is removed."""
     habit = Habit(name="Test Habit", periodicity="daily")
     db_session.add(habit)
     db_session.flush()

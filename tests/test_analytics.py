@@ -10,7 +10,7 @@ from analytics import (
 )
 
 def test_get_all_habits(db_session):
-    # Create test habits with known data
+    """Verifies that all habits can be retrieved from the database"""
     habits = [
         Habit(name="Habit 1", periodicity="daily"),
         Habit(name="Habit 2", periodicity="weekly"),
@@ -25,7 +25,7 @@ def test_get_all_habits(db_session):
     assert {h.name for h in retrieved_habits} == {"Habit 1", "Habit 2", "Habit 3"}
 
 def test_get_habits_by_periodicity(db_session):
-    # Create mixed periodicity habits
+    """Tests filtering habits by their periodicity (daily/weekly)."""
     habits = [
         Habit(name="Daily 1", periodicity="daily"),
         Habit(name="Weekly 1", periodicity="weekly"),
@@ -36,7 +36,6 @@ def test_get_habits_by_periodicity(db_session):
         db_session.add(habit)
     db_session.commit()
 
-    # Test filtering
     daily_habits = get_habits_by_periodicity(db_session, "daily")
     weekly_habits = get_habits_by_periodicity(db_session, "weekly")
     
@@ -46,7 +45,7 @@ def test_get_habits_by_periodicity(db_session):
     assert all(h.periodicity == "weekly" for h in weekly_habits)
 
 def test_get_longest_run_streak(db_session):
-    # Create habits with different streak patterns
+    """Tests finding the longest streak across all habits in the database."""
     base_time = datetime.now(UTC)
     
     # Habit with 5-day streak
@@ -81,7 +80,7 @@ def test_get_longest_run_streak(db_session):
     assert longest_streak == 5
 
 def test_get_longest_run_streak_for_habit(db_session):
-    # Create a habit with a known streak pattern
+    """Verifies max streak calculation for a habit with multiple streak periods."""
     habit = Habit(name="Test Habit", periodicity="daily")
     db_session.add(habit)
     
@@ -115,7 +114,7 @@ def test_get_longest_run_streak_for_habit(db_session):
     assert longest_streak == 5
 
 def test_get_days_since_last_completion(db_session):
-    # Create a habit with known last completion
+    """Tests calculation of days elapsed since the last habit completion."""
     habit = Habit(name="Test Habit", periodicity="daily")
     db_session.add(habit)
     
@@ -133,16 +132,15 @@ def test_get_days_since_last_completion(db_session):
     assert days_since == 3
 
 def test_get_days_since_last_completion_never_completed(db_session):
-    # Create a habit with no completions
+    """Verifies handling of habits that have never been completed."""
     habit = Habit(name="Test Habit", periodicity="daily")
     db_session.add(habit)
     db_session.commit()
 
-    # Test days since completion for never-completed habit
     days_since = get_days_since_last_completion(db_session, habit.id)
     assert days_since is None
 
 def test_get_days_since_last_completion_nonexistent_habit(db_session):
-    # Test with non-existent habit ID
+    """Ensures proper handling when querying non-existent habit IDs."""
     days_since = get_days_since_last_completion(db_session, 999)
     assert days_since is None
